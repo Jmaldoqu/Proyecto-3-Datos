@@ -215,6 +215,30 @@ def randomCarSimulation():
         cars.append(new_car)
 
 
+def spawnMultipleCars1(count=5):
+    nodeList = graph_1.getVertices()
+    nodeNames = [n[0] for n in nodeList]
+
+    for _ in range(count):
+        if len(nodeNames) < 2:
+            return  # No hay suficientes nodos
+
+        origin = random.choice(nodeNames)
+        destination = random.choice(nodeNames)
+        while destination == origin:
+            destination = random.choice(nodeNames)
+
+        path = graph_1.dijkstra(origin, destination)
+        coords = getCoordsPath(path)
+
+        if len(coords) >= 2:
+            new_car = CarState(coords)
+            cars.append(new_car)
+
+def spawnMultipleCars(count=5):
+    for i in range(0, count):
+        randomCarSimulation()
+
 def animateCars():
     outputCanva.delete("cars")
     for c in cars[:]:
@@ -234,6 +258,9 @@ b_simulate.grid(row=10, column=1, padx=5, pady=5)
 
 b_simulate = tk.Button(window, text="Random Cars", command=randomCarSimulation, font=myfont)
 b_simulate.grid(row=11, column=1, padx=5, pady=10)
+
+b_multi = tk.Button(window, text="Multiple Cars", command=lambda: spawnMultipleCars(5), font=myfont)
+b_multi.grid(row=12, column=1, padx=5, pady=5)
 
 
 root.mainloop()
