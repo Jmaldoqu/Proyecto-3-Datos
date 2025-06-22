@@ -125,3 +125,42 @@ class Graph:
             list.append(token)
             node = node.next
         return list
+
+    def dijkstra(self, start, end):
+        dist = {}
+        prev = {}
+        unvisited = []
+
+        node = self.first
+        while node:
+            dist[node.data] = float("inf")
+            prev[node.data] = None
+            unvisited.append(node.data)
+            node = node.next
+
+        dist[start] = 0
+
+        while unvisited:
+            current = min(unvisited, key=lambda n: dist[n])
+            unvisited.remove(current)
+
+            if current == end:
+                break
+
+            node = self.first
+            while node and node.data != current:
+                node = node.next
+
+            for adj in node.list.getAdjacencies():
+                alt = dist[current] + float(adj[1])
+                if alt < dist[adj[0]]:
+                    dist[adj[0]] = alt
+                    prev[adj[0]] = current
+
+        path = []
+        step = end
+        while step:
+            path.insert(0, step)
+            step = prev[step]
+
+        return path

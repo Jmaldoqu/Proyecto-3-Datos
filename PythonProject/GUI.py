@@ -1,4 +1,6 @@
 ﻿from Graph import Graph
+from CarList import carList, car
+
 
 from tkinter import *
 import tkinter as tk
@@ -145,8 +147,67 @@ b_create_node.grid(row = 13, column = 42, padx = 5, pady = 5, columnspan = 3, ro
 
 #Simulación de carritos ------------------------------------------------------------------------------------------------
 
+cars = carList()
+
+cars = carList()
+current_car = None  # Carrito actual que se está moviendo
+car_path = []       # Lista de coordenadas [(x0, y0), (x1, y1), (x2, y2), ...]
+
+def getNodeByName(name):
+    current = graph_1.first
+    while current:
+        if current.data == name:
+            return current
+        current = current.next
+    return None
+
+def simulateCarPath(path):
+    global car_path, current_car
+    car_path = []
+
+    for i in range(len(path)):
+        node = getNodeByName(path[i])
+        if node:
+            car_path.append((node.x, node.y))
+
+    if len(car_path) >= 2:
+        x0, y0 = car_path[0]
+        x1, y1 = car_path[1]
+        current_car = car(x0, y0, x1, y1)
+        current_car_index = 1
+        moveCar(current_car_index)
+
+def moveCar(index):
+    global current_car, car_path
+
+    if not current_car:
+        return
+
+    outputCanva.delete("cars")
+    current_car.updatePos()
+    outputCanva.create_oval(current_car.x - 5, current_car.y - 5,
+                            current_car.x + 5, current_car.y + 5,
+                            fill="red", tags="cars")
+
+    # ¿Llegó al destino?
+    if abs(current_car.x - current_car.xf) < 2 and abs(current_car.y - current_car.yf) < 2:
+        if index + 1 < len(car_path):
+            x0, y0 = car_path[index]
+            x1, y1 = car_path[index + 1]
+            current_car = car(x0, y0, x1, y1)
+            outputCanva.after(50, lambda: moveCar(index + 1))
+        else:
+            current_car = None  # Terminó
+    else:
+        outputCanva.after(20, lambda: moveCar(index))
+
 def carSimulation():
-    pass
+    path = graph_1.dijkstra(entry_origin.get(), entry_destination.get())
+    if len(path) >= 2:
+        simulateCarPath(path)
+
+b_simulate = tk.Button(window, text="Simulate Cars", command=carSimulation, font=myfont)
+b_simulate.grid(row=10, column=0, padx=5, pady=5)
 
 
 root.mainloop()
