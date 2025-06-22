@@ -1,4 +1,6 @@
-﻿from Graph import Graph
+﻿import random
+
+from Graph import Graph
 from CarList import carList, car
 
 
@@ -67,7 +69,7 @@ def drawEdges(vertex, verticesList):
 
 # Ventana - GUI
 root = tk.Tk()
-root.title("Pryecto III - ADS")
+root.title("Proyecto III - ADS")
 window = tk.Frame(root, width = 1200, height = 620)
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
@@ -83,18 +85,18 @@ window.grid()
 graph_1 = Graph()
 #verticesConsecutive = 1
 
-myfont = font.Font(family="Times", size=10, weight="bold") #Cambiar después
+myfont = font.Font(family="Helvetica", size=8, weight="bold") #Cambiar después
 
 
 # Botones --------------------------------------------------------------------------------------------------------------
 b_createEdge = tk.Button(window, text = "Create Edge", command = newEdge, font = myfont)
-b_createEdge.grid(row = 4, column = 0, padx = 5, pady = 5)
+b_createEdge.grid(row = 4, column = 1, padx = 5, pady = 5)
 
 b_deleteVertex = tk.Button(window, text = "Delete Vertex", command = deleteVertex, font = myfont)
-b_deleteVertex.grid(row = 6, column = 0, padx = 5, pady = 5)
+b_deleteVertex.grid(row = 6, column = 1, padx = 5, pady = 5)
 
 b_deleteEdge = tk.Button(window, text = "Delete Edge", command = deleteEdge, font = myfont)
-b_deleteEdge.grid(row = 8, column = 0, padx = 5, pady = 5)
+b_deleteEdge.grid(row = 8, column = 1, padx = 5, pady = 5)
 
 
 #Labels
@@ -137,21 +139,40 @@ entry_node_x.grid(row = 8, column = 44, padx = 5, pady = 5)
 
 
 node_y_label = tk.Label(window, text = "Y:", font = myfont)
-node_y_label.grid(row = 11, column = 43, padx = 5, pady = 5)
+node_y_label.grid(row =10, column = 43, padx = 5, pady = 5)
 entry_node_y = tk.Entry(window, font = myfont, width = 15)
-entry_node_y.grid(row = 11, column = 44, padx = 5, pady = 5)
+entry_node_y.grid(row = 10, column = 44, padx = 5, pady = 5)
 
-b_create_node = tk.Button( window, text="Create node", command=lambda: newVertex( entry_node_name.get(), int(entry_node_x.get()), int(entry_node_y.get())), font=myfont, width=37 )
-b_create_node.grid(row = 13, column = 42, padx = 5, pady = 5, columnspan = 3, rowspan = 3)
+b_create_node = tk.Button( window, text="Create node", command=lambda: newVertex( entry_node_name.get(), int(entry_node_x.get()) , int(entry_node_y.get())), font=myfont, width=37 )
+b_create_node.grid(row = 11, column = 42, padx = 5, pady = 5, columnspan = 3, rowspan = 3)
 
 
 #Simulación de carritos ------------------------------------------------------------------------------------------------
 
 cars = carList()
 
-cars = carList()
-current_car = None  # Carrito actual que se está moviendo
-car_path = []       # Lista de coordenadas [(x0, y0), (x1, y1), (x2, y2), ...]
+cars = []
+
+class CarState:
+    def __init__(self, path):
+        self.index = 1
+        self.path = path
+        x0, y0 = path[0]
+        x1, y1 = path[1]
+        self.car = car(x0, y0, x1, y1)
+
+    def update(self):
+        self.car.updatePos()
+
+        if abs(self.car.x - self.car.xf) < 2 and abs(self.car.y - self.car.yf) < 2:
+            self.index += 1
+            if self.index < len(self.path):
+                x0, y0 = self.path[self.index - 1]
+                x1, y1 = self.path[self.index]
+                self.car = car(x0, y0, x1, y1)
+            else:
+                return False
+        return True
 
 def getNodeByName(name):
     current = graph_1.first
@@ -161,53 +182,58 @@ def getNodeByName(name):
         current = current.next
     return None
 
-def simulateCarPath(path):
-    global car_path, current_car
-    car_path = []
-
-    for i in range(len(path)):
-        node = getNodeByName(path[i])
+def getCoordsPath(path):
+    coords = []
+    for nodeName in path:
+        node = getNodeByName(nodeName)
         if node:
-            car_path.append((node.x, node.y))
-
-    if len(car_path) >= 2:
-        x0, y0 = car_path[0]
-        x1, y1 = car_path[1]
-        current_car = car(x0, y0, x1, y1)
-        current_car_index = 1
-        moveCar(current_car_index)
-
-def moveCar(index):
-    global current_car, car_path
-
-    if not current_car:
-        return
-
-    outputCanva.delete("cars")
-    current_car.updatePos()
-    outputCanva.create_oval(current_car.x - 5, current_car.y - 5,
-                            current_car.x + 5, current_car.y + 5,
-                            fill="red", tags="cars")
-
-    # ¿Llegó al destino?
-    if abs(current_car.x - current_car.xf) < 2 and abs(current_car.y - current_car.yf) < 2:
-        if index + 1 < len(car_path):
-            x0, y0 = car_path[index]
-            x1, y1 = car_path[index + 1]
-            current_car = car(x0, y0, x1, y1)
-            outputCanva.after(50, lambda: moveCar(index + 1))
-        else:
-            current_car = None  # Terminó
-    else:
-        outputCanva.after(20, lambda: moveCar(index))
+            coords.append((node.x, node.y))
+    return coords
 
 def carSimulation():
     path = graph_1.dijkstra(entry_origin.get(), entry_destination.get())
-    if len(path) >= 2:
-        simulateCarPath(path)
+    coords = getCoordsPath(path)
+    if len(coords) >= 2:
+        new_car = CarState(coords)
+        cars.append(new_car)
+
+def randomCarSimulation():
+    nodeList = graph_1.getVertices()
+    nodeNames = [n[0] for n in nodeList]
+
+    origin = random.choice(nodeNames)
+    destination = random.choice(nodeNames)
+
+    while origin == destination:
+        destination = random.choice(nodeNames)
+
+    path = graph_1.dijkstra(origin, destination)
+    coords = getCoordsPath(path)
+
+    if len(coords) >= 2:
+        new_car = CarState(coords)
+        cars.append(new_car)
+
+
+def animateCars():
+    outputCanva.delete("cars")
+    for c in cars[:]:
+        still_moving = c.update()
+        outputCanva.create_oval(c.car.x - 5, c.car.y - 5,
+                                c.car.x + 5, c.car.y + 5,
+                                fill="red", tags="cars")
+        if not still_moving:
+            cars.remove(c)
+    outputCanva.after(20, animateCars)
+
+animateCars()
+
 
 b_simulate = tk.Button(window, text="Simulate Cars", command=carSimulation, font=myfont)
-b_simulate.grid(row=10, column=0, padx=5, pady=5)
+b_simulate.grid(row=10, column=1, padx=5, pady=5)
+
+b_simulate = tk.Button(window, text="Random Cars", command=randomCarSimulation, font=myfont)
+b_simulate.grid(row=11, column=1, padx=5, pady=10)
 
 
 root.mainloop()
